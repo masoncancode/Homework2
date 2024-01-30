@@ -1,0 +1,182 @@
+---
+title: "Homework 2 Report"
+author: "Mason Reed"
+date: "2024-01-29"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+profs = read.csv('profs.csv')
+bikeshare = read.csv('bikeshare.csv')
+capmetroUT = read.csv('capmetro_UT.csv')
+billboard = read.csv('billboard.csv')
+```
+
+## Beauty, or not, in the classroom
+
+### A
+```{r}
+profPlot = ggplot(profs)
+profPlot + geom_histogram(aes(x = eval), color = 'black', fill = 'navy') + labs(title = 'Distribution Of Course Evaluation Scores', x = 'Evaluation Score', y = 'Frequency') + xlim(1,5)
+```
+
+The histogram shows the distribution of average course evaluation scores for all 463 courses included in the survey. Possible scores range from 1 to 5, though the courses are centered at a mean evaluation score of `r round(mean(profs$eval),2)`.
+
+
+### B
+```{r}
+profPlot + geom_boxplot(aes(x = native, y = eval, fill = native)) + labs(title = 'Distribution Of Evaluation Scores by Native English Speaking Professors', x = 'Native English Speaker Status', y = 'Evaluation Score') 
+```
+
+The boxplots show differences in the distribution of evalution scores between courses taught by native English speakers and non-native English. Native English speakers have a higher median evaluation score of `r median(profs$eval[profs$native == 'yes'])` compared to courses taught by non-native speakers at `r median(profs$eval[profs$native != 'yes'])`. The evaluation scores for native speakers also has more spread.
+
+
+
+### C
+```{r}
+profPlot + geom_histogram(aes(x = eval), color = 'black', fill = 'orange',binwidth = .25) + facet_wrap(~gender) + labs(title = "Distribution Of Evaluation Scores By Professor's Gender", x = 'Evaluation Score', y = 'Frequency') + xlim(1,5)
+
+```
+
+The histograms show a slight favor in evaluation scores for men. The distribution of evaluation scores for courses with male professors seems to be more negatively skewed.
+
+
+
+### D
+```{r}
+profPlot + geom_point(aes(x = beauty, y = eval)) + ylim(1,5) + labs(title = 'Professor Evaluation Scores In Relation To Beauty Score', x = 'Beauty Score', y = 'Evaluation Score')
+```
+
+The scatterplot of beauty score vs. average evaluation score shows a very weak relationship between beauty and evaluation score. The beauty score is relative to the average 1 to 5 rating given by the study's panelists.
+
+
+
+## Bike Sharing
+
+### A
+```{r}
+bikeRentsByHr = bikeshare %>%
+  group_by(hr) %>%
+    summarise(avg_rentals = mean(total))
+ggplot(bikeRentsByHr) + geom_line(aes(x = hr, y = avg_rentals)) + labs(title = 'Average Bike Rentals Throughout Day', x = 'Hour Of Day', y = 'Average Rentals')
+```
+
+This line graph shows the average number of bike rentals per hour by hour of the day. There are two peaks at the 8th and 16th hour of the day, or 8 am and 4 pm. This plot suggests peak bike rentals happen when people are travelling to and from work or school, and that rentals are lowest early in the mornings and late into the night when people are sleeping.
+
+
+
+
+### B
+```{r}
+rentsByHrWkday = bikeshare %>%
+  group_by(hr,workingday) %>%
+    summarise(avg_rentals = mean(total))
+ggplot(rentsByHrWkday) + geom_line(aes(x = hr, y = avg_rentals)) + facet_wrap(~workingday) + labs(title = 'Average Hourly Bike Rentals For Working and Non-working Days', x = 'Hour Of Day', y = 'Average Hourly Bikes Rented')
+
+```
+
+This line graph shows the average bikes rented per hour by each hour of the day and is separated into working and non-working days. Working days are all weekdays that are not holidays and non-working days are all weekends and holidays. Working days follow the peaks when work starts and ends, while non-working days have peak bikes rented per hour in the middle of the day.
+
+### C
+```{r}
+bikeRentsAtNine = filter(bikeshare, hr == 9) %>%
+  group_by(weathersit,workingday) %>%
+    summarise(avg_Rents = mean(total))
+
+ggplot(bikeRentsAtNine) + geom_col(aes(x = weathersit, y = avg_Rents , fill = weathersit)) + facet_wrap(~workingday) + labs(title =' Average Bikes Rented Hourly By Weather and Workday', x = 'Weather Situation (1 (Fair) to 4 (Heavy Storm))', y = 'Average Bikes Rented Per Hour')
+
+```
+
+The above barplot tallys the average bikes rented per hour for each weather situation and is seperated into working days and non-working days. The weather situations range from 1 to 4, though no 4 situation was recorded. Situation 1 is anywhere from sunny to partly cloudy, 2 is misty and cloudy, 3 ranges from a light snow to a thunderstorm, and 4 is a heavy thunderstorm or blizzard. Bike rentals decreases with worse weather but this decrease is less on working days.
+
+
+
+
+## CapMetro UT Ridership
+### 1. Ridership Patterns Over The Weeks
+```{r}
+capmetroUT = mutate(capmetroUT,
+day_of_week = factor(day_of_week,
+levels=c("Mon", "Tue", "Wed","Thu", "Fri", "Sat", "Sun")),
+month = factor(month,
+levels=c("Sep", "Oct","Nov")))
+
+capmetroByHr = capmetroUT %>%
+  group_by(day_of_week,month,hour_of_day) %>%
+    summarize(meanBoarding = mean(boarding))
+ggplot(capmetroByHr) + geom_line(aes(x = hour_of_day, y = meanBoarding, color = month)) + facet_wrap(~day_of_week) + labs(title = 'Average Boarding By Hour Of Day Across Days Of Week and Month', x = 'Hour Of Day', y = 'Average Boarding')
+```
+
+The graph above has 7 line graphs corresponding to each day of the week. It plots 3 lines which track different months average boardings per 15 minutes over the hours of the day. Some boarding patterns could be explained by holiday travel patterns with labor day bringing down the Monday averages of September. The lower average boardings per 15 minutes in November could also be explained by the holidays of Thanksgiving and Black Friday when more students are at home.
+
+
+
+### 2.
+```{r}
+ggplot(capmetroUT) + geom_point(aes(x = temperature, y = boarding, color = weekend)) + facet_wrap(~hour_of_day) + labs(title = "Boardings Per 15 Minutes vs. Temperature", x = "Temperature (F)", y = "Boardings Per 15")
+
+
+```
+
+The above plots show the total boardings per 15 minutes for UT route CapMetro buses over temperature and separated by hour of day and weekends. When separating the by hour of day and into weekdays and weekends there seems to be little to no relationship between temperature and boardings per 15 minutes. 
+\newpage
+
+
+#
+# Billboard Top 100
+
+### A: Top Ten Most Popular Songs
+```{r}
+billboardTopTen = billboard %>%
+  group_by(song, performer) %>%
+    summarise(count = sum(song == song)) %>%
+      arrange(desc(count)) 
+billboardTopTen = filter(billboardTopTen, count > billboardTopTen$count[11])
+billboardTopTen
+```
+
+These top ten songs were featured in the Billboard Top 100 for the longest amount of time. Count is the number of weeks a song was in the Billboard Top 100 Chart.
+\newpage
+
+
+### B: Musical Diversity
+```{r}
+billboardDiversity = billboard %>%
+  filter(year != 2021 & year != 1958) %>%
+    group_by(year) %>%
+      summarise(musicalDiversity = length(unique(song)))
+ggplot(billboardDiversity) + geom_line(aes(x = year, y = musicalDiversity)) + labs(title = 'Musical Diversity Of Top 100 Over The Years', x = 'Year', y = 'Number Of Unique Songs In Top 100')
+
+```
+
+The line graph tracks the number of unique songs appearing in the Billboard Top 100 from the years 1959 to 2020. The Billboard Top 100 varied most right before 1970 and has risen to a similar peak in recent years. The period from the 90's to mid 2000s had the least diverse Billboard Top 100 Charts.
+\newpage
+
+
+### C: Top 19 Artists with Ten-week Hits
+
+```{r}
+tenWeekHits = billboard %>%
+  group_by(performer) %>%
+    filter(weeks_on_chart >= 10) %>%
+      summarise(songCount = length(unique(song))) %>%
+        arrange(desc(songCount))
+tenWeekHits = filter(tenWeekHits, songCount >= 30)
+
+ggplot(tenWeekHits) + geom_col(aes(x = performer, y = songCount)) + coord_flip() + labs(title = 'Artists with 30 or More Ten-Week+ Hits', y = 'Number Of Ten-Week Hits', x = 'Music Artists')
+
+
+```
+
+The bar plot shows 19 artists with at least 30 songs that were in the Billboard Top 100 charts for at least ten weeks. Each artists' ten-week hits were tallied and plotted on the x-axis. Elton John has the most with over 50 of these ten-week hits.
+
+
+### GitHub Repo Containing .Rmd File:
+https://github.com/masoncancode/Homework2
+
